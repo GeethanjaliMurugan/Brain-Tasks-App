@@ -5,28 +5,23 @@ env:
     AWS_REGION: ap-south-1
     ECR_REPO: brain-tasks-app
     IMAGE_TAG: latest
+    CLUSTER_NAME: your-eks-cluster-name
 
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 620916944925.dkr.ecr.$AWS_REGION.amazonaws.com
+      - aws ecr get-login-password --region $AWS_REGION |
+        docker login --username AWS --password-stdin 620916944925.dkr.ecr.$AWS_REGION.amazonaws.com
+      - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
   build:
     commands:
-      - echo Build started
       - docker build -t $ECR_REPO:$IMAGE_TAG .
       - docker tag $ECR_REPO:$IMAGE_TAG 620916944925.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 
   post_build:
     commands:
-      - echo Pushing image to ECR
       - docker push 620916944925.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
-      - echo Build completed
-
-artifacts:
-  files:
-    - deployment.yaml
-    - service.yaml
-    - appspec.yml
-    - scripts/*
+      - kubectl apply -f deployment.yaml
+      - kubectl apply -f service.yaml
