@@ -5,23 +5,27 @@ env:
     AWS_REGION: ap-south-1
     ECR_REPO: brain-tasks-app
     IMAGE_TAG: latest
-    CLUSTER_NAME: your-eks-cluster-name
+    CLUSTER_NAME: brain-tasks-cluster
 
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR
-      - aws ecr get-login-password --region $AWS_REGION |
-        docker login --username AWS --password-stdin 620916944925.dkr.ecr.$AWS_REGION.amazonaws.com
-      - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+      - aws ecr get-login-password --region ap-south-1 |
+        docker login --username AWS --password-stdin 620916944925.dkr.ecr.ap-south-1.amazonaws.com
+      - echo Updating kubeconfig for EKS cluster
+      - aws eks update-kubeconfig --region ap-south-1 --name brain-tasks-cluster
 
   build:
     commands:
-      - docker build -t $ECR_REPO:$IMAGE_TAG .
-      - docker tag $ECR_REPO:$IMAGE_TAG 620916944925.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
+      - echo Build started
+      - docker build -t brain-tasks-app:latest .
+      - docker tag brain-tasks-app:latest 620916944925.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app:latest
 
   post_build:
     commands:
-      - docker push 620916944925.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
+      - echo Pushing Docker image to ECR
+      - docker push 620916944925.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app:latest
+      - echo Deploying application to EKS
       - kubectl apply -f deployment.yaml
       - kubectl apply -f service.yaml
